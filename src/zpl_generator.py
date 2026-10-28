@@ -56,13 +56,13 @@ def sanitize_turkish_chars(text: str) -> str:
     return sanitized.strip()
 
 
-def truncate_address(address: str, max_chars: int = 140) -> str:
+def truncate_address(address: str, max_chars: int = 200) -> str:
     """
     Cleans and safely truncates long address texts to prevent overflowing thermal label bounds.
 
     Args:
         address: Full address text.
-        max_chars: Maximum characters allowed across label address block.
+        max_chars: Maximum characters allowed across label address block (default: 200).
 
     Returns:
         Truncated and sanitized address string.
@@ -115,11 +115,11 @@ class ZPLGenerator:
         clean_carrier = sanitize_turkish_chars(data.carrier_name).upper()
         clean_recipient = sanitize_turkish_chars(data.recipient_name).upper()
         clean_phone = sanitize_turkish_chars(data.phone)
-        clean_address = truncate_address(data.address, max_chars=140).upper()
+        clean_address = truncate_address(data.address, max_chars=200).upper()
         clean_tracking = sanitize_turkish_chars(data.tracking_number).upper()
         clean_payment = sanitize_turkish_chars(data.payment_type).upper()
 
-        # Build clean, modular ZPL II commands
+        # Build clean, modular ZPL II commands (203 DPI / 8 dpmm standard)
         zpl_lines = [
             "^XA",
             f"^PW{self.width}",
@@ -135,10 +135,11 @@ class ZPLGenerator:
             f"^FO50,158^A0N,32,32^FD{clean_recipient}^FS",
             f"^FO480,158^A0N,24,24^FDTEL: {clean_phone}^FS",
             "^FO50,200^GB700,1,1^FS",
-            # Multi-line address block (width: 700, max lines: 3, line spacing: 4)
-            f"^FO50,215^A0N,22,22^FB700,3,4,L,0^FD{clean_address}^FS",
-            # --- BARCODE SECTION (Code 128) ---
+            # Multi-line address block with ^FB (width: 720, max lines: 3, line spacing: 0, Left-aligned)
+            f"^FO50,215^A0N,22,22^FB720,3,0,L,0^FD{clean_address}^FS",
+            # --- BARCODE SECTION (Code 128 with ^BY module width optimization) ---
             "^FO30,345^GB740,140,2^FS",
+            "^BY2",
             f"^FO140,365^BCN,75,Y,N,N^FD{clean_tracking}^FS",
             # --- PAYMENT & SUMMARY SECTION ---
             "^FO30,500^GB740,70,2^FS",

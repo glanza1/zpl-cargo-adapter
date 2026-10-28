@@ -87,6 +87,7 @@ class TestZPLGenerator:
         assert zpl.startswith("^XA")
         assert zpl.endswith("^XZ")
         assert "^BCN" in zpl  # Code 128 barcode
+        assert "^BY" in zpl   # Barcode module width optimization
         assert "^PW800" in zpl
         assert "^LL600" in zpl
         assert "^FD" in zpl
